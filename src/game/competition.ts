@@ -38,7 +38,7 @@ export function createAthlete(
 }
 
 export function createPlayerAthlete(name: string, style: JumpStyle): Athlete {
-  return createAthlete(name, 80, 75, 85, style, true, 0)
+  return createAthlete(name, 62, 65, 78, style, true, 0)
 }
 
 export function createAIOpponents(): Athlete[] {

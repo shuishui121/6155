@@ -7,7 +7,7 @@ import {
 import type { Athlete, JumpStyle } from './types'
 
 export function calculateBaseHeight(athlete: Athlete): number {
-  return 1.5 + athlete.strength * 0.01 + athlete.technique * 0.008
+  return 1.0 + athlete.strength * 0.007 + athlete.technique * 0.005
 }
 
 export function calculateSuccessProbability(
@@ -21,15 +21,23 @@ export function calculateSuccessProbability(
   const baseSuccess = (athlete.strength * 0.4 + athlete.technique * 0.6) / 100
 
   const techModifier = TECHNIQUE_MODIFIERS[technique]
-  const techniqueFactor = techModifier.base
+  const techniqueFactor = techModifier.stability
 
-  const windFactor = 1 + windSpeed * 0.02
-  const fatigueFactor = 1 - athlete.fatigue * 0.005
-  const angleFactor = 1 - Math.abs(jumpAngle - OPTIMAL_ANGLE_BEST) * 0.02
-  const runUpFactor = 0.7 + runUpQuality * 0.3
+  const windFactor = 1 + windSpeed * 0.018
+  const fatigueFactor = 1 - athlete.fatigue * 0.004
+  const angleFactor = 1 - Math.abs(jumpAngle - OPTIMAL_ANGLE_BEST) * 0.025
+  const runUpFactor = 0.65 + runUpQuality * 0.35
 
   const baseHeight = calculateBaseHeight(athlete)
-  const heightFactor = Math.max(0, 1 - (height - baseHeight) * 1.5)
+  const effectiveBase = baseHeight * techModifier.base
+  const difficulty = height - effectiveBase
+  const heightFactor = Math.max(0, 1 - difficulty * 2.8)
+
+  const maxAchievable = effectiveBase * 1.15
+  if (height > maxAchievable) {
+    const overflowPenalty = (height - maxAchievable) * 5
+    return Math.max(0, 0.05 - overflowPenalty)
+  }
 
   const probability = baseSuccess *
     techniqueFactor *
@@ -51,15 +59,17 @@ export function calculateActualHeight(
 ): number {
   const baseHeight = calculateBaseHeight(athlete)
   const techModifier = TECHNIQUE_MODIFIERS[technique]
-  const fatigueFactor = 1 - athlete.fatigue * 0.003
-  const windFactor = 1 + windSpeed * 0.015
-  const angleFactor = 1 - Math.abs(jumpAngle - OPTIMAL_ANGLE_BEST) * 0.015
-  const runUpFactor = 0.8 + runUpQuality * 0.2
+  const fatigueFactor = 1 - athlete.fatigue * 0.0025
+  const windFactor = 1 + windSpeed * 0.012
+  const angleFactor = 1 - Math.abs(jumpAngle - OPTIMAL_ANGLE_BEST) * 0.012
+  const runUpFactor = 0.78 + runUpQuality * 0.22
 
-  const randomFactor = 0.95 + Math.random() * 0.1
+  const techniqueFactor = 0.85 + techModifier.base * 0.15
+
+  const randomFactor = 0.92 + Math.random() * 0.16
 
   const actualHeight = baseHeight *
-    techModifier.base *
+    techniqueFactor *
     fatigueFactor *
     windFactor *
     angleFactor *
