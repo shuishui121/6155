@@ -94,3 +94,14 @@ export function calculateJumpTrajectory(
   const y = startY - 4 * maxHeight * progress * (1 - progress)
   return { x, y }
 }
+
+export const OPTIMAL_RUN_UP_POINT = 0.8
+
+export function calculateRunUpQuality(runUpProgress: number): number {
+  const diff = Math.abs(runUpProgress - OPTIMAL_RUN_UP_POINT)
+  if (diff <= 0.02) return 1.0
+  if (diff <= 0.05) return 0.95 - (diff - 0.02) * 1.67
+  if (diff <= 0.15) return 0.9 - (diff - 0.05) * 1.0
+  if (diff <= 0.3) return 0.8 - (diff - 0.15) * 1.33
+  return Math.max(0.4, 0.6 - (diff - 0.3) * 1.0)
+}

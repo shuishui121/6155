@@ -13,7 +13,7 @@ import {
   canPlayerAttempt,
   getAthleteBestHeight,
 } from '@/game/competition'
-import { generateWindSpeed, calculateSuccessProbability, calculateActualHeight } from '@/game/physics'
+import { generateWindSpeed, calculateSuccessProbability, calculateActualHeight, calculateRunUpQuality } from '@/game/physics'
 import { saveCompetitionResult } from '@/game/storage'
 
 interface GameStore extends GameState {
@@ -99,9 +99,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!competition || !playerAthlete) return
 
     const attempts = getAthleteAttempts(competition, playerAthlete.id)
-    const bestHeight = getAthleteBestHeight(competition, playerAthlete.id)
 
     if (!canPlayerAttempt(competition)) return
+
+    const runUpQuality = calculateRunUpQuality(runUpProgress)
 
     const successProb = calculateSuccessProbability(
       playerAthlete,
@@ -109,7 +110,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       windSpeed,
       jumpAngle,
       selectedTechnique,
-      runUpProgress
+      runUpQuality
     )
 
     const actualHeight = calculateActualHeight(
@@ -117,7 +118,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       jumpAngle,
       windSpeed,
       selectedTechnique,
-      runUpProgress
+      runUpQuality
     )
 
     const success = actualHeight >= competition.currentHeight && Math.random() < successProb + 0.2
@@ -131,7 +132,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       playerAthlete.fatigue,
       selectedTechnique,
       attempts + 1,
-      runUpProgress,
+      runUpQuality,
       jumpAngle
     )
 

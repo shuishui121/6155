@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Play, Pause, SkipForward, Zap, Target, Info } from 'lucide-react'
 import { useGameStore } from '@/store/useGameStore'
 import { STYLE_NAMES, OPTIMAL_ANGLE_MIN, OPTIMAL_ANGLE_MAX, MAX_ATTEMPTS_PER_HEIGHT } from '@/game/constants'
+import { calculateRunUpQuality, OPTIMAL_RUN_UP_POINT } from '@/game/physics'
 import { getAthleteAttempts } from '@/game/competition'
 import type { JumpStyle } from '@/game/types'
 
@@ -93,11 +94,12 @@ export default function ControlPanel() {
   ]
 
   const getRunUpQuality = () => {
-    const diff = Math.abs(runUpProgress - 0.8)
-    if (diff < 0.05) return { text: '完美!', color: 'text-green-400' }
-    if (diff < 0.15) return { text: '不错', color: 'text-blue-400' }
-    if (diff < 0.25) return { text: '一般', color: 'text-yellow-400' }
-    return { text: '过早/过晚', color: 'text-red-400' }
+    const quality = calculateRunUpQuality(runUpProgress)
+    if (quality >= 0.95) return { text: '完美!', color: 'text-green-400', quality }
+    if (quality >= 0.85) return { text: '很好', color: 'text-green-400', quality }
+    if (quality >= 0.7) return { text: '不错', color: 'text-blue-400', quality }
+    if (quality >= 0.55) return { text: '一般', color: 'text-yellow-400', quality }
+    return { text: '过早/过晚', color: 'text-red-400', quality }
   }
 
   const canJump = isPlayerTurn && phase === 'running' && runUpProgress >= 0.5
@@ -142,28 +144,44 @@ export default function ControlPanel() {
             <label className="text-sm text-slate-400 mb-2 block flex items-center justify-between">
               <span className="flex items-center gap-2">
                 <Info size={14} />
-                起跳角度: {jumpAngle}°
+                起跳角度: <span className={`font-bold ${
+                  jumpAngle >= OPTIMAL_ANGLE_MIN && jumpAngle <= OPTIMAL_ANGLE_MAX
+                    ? 'text-green-400'
+                    : 'text-yellow-400'
+                }`}>{jumpAngle}°</span>
               </span>
               <span className={
                 jumpAngle >= OPTIMAL_ANGLE_MIN && jumpAngle <= OPTIMAL_ANGLE_MAX
                   ? 'text-green-400'
                   : 'text-yellow-400'
               }>
-                最佳: {OPTIMAL_ANGLE_MIN}-{OPTIMAL_ANGLE_MAX}°
+                {jumpAngle >= OPTIMAL_ANGLE_MIN && jumpAngle <= OPTIMAL_ANGLE_MAX ? '✓ 最佳范围' : '⚠ 偏离最佳'}
               </span>
             </label>
-            <input
-              type="range"
-              min="35"
-              max="55"
-              value={jumpAngle}
-              onChange={(e) => setJumpAngle(Number(e.target.value))}
-              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-orange-500"
-            />
-            <div className="flex justify-between text-xs text-slate-500 mt-1">
-              <span>35°</span>
-              <span className="text-orange-400">45°</span>
-              <span>55°</span>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full h-2 bg-slate-700 rounded-lg overflow-hidden">
+                  <div className="h-full bg-red-500/40" style={{ width: `${((OPTIMAL_ANGLE_MIN - 35) / 20) * 100}%` }} />
+                  <div className="h-full bg-green-500/60 -mt-2" style={{ marginLeft: `${((OPTIMAL_ANGLE_MIN - 35) / 20) * 100}%`, width: `${((OPTIMAL_ANGLE_MAX - OPTIMAL_ANGLE_MIN) / 20) * 100}%` }} />
+                  <div className="h-full bg-red-500/40 -mt-2" style={{ marginLeft: 'auto', width: `${((55 - OPTIMAL_ANGLE_MAX) / 20) * 100}%` }} />
+                </div>
+              </div>
+              <input
+                type="range"
+                min="35"
+                max="55"
+                value={jumpAngle}
+                onChange={(e) => setJumpAngle(Number(e.target.value))}
+                className="relative w-full h-2 bg-transparent rounded-lg appearance-none cursor-pointer z-10 accent-orange-500"
+              />
+            </div>
+            <div className="flex justify-between text-xs mt-1">
+              <span className="text-red-400/70">35° 太平</span>
+              <span className="text-green-400 font-bold">40-50° 最佳</span>
+              <span className="text-red-400/70">55° 太陡</span>
+            </div>
+            <div className="mt-2 p-2 bg-slate-800/50 rounded-lg text-xs text-slate-400">
+              💡 角度太平会向前冲太多，太陡会跳不高，45°左右最理想
             </div>
           </div>
 

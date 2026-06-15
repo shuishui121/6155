@@ -35,6 +35,27 @@ export default function GameCanvas({
     ctx.fillStyle = skyGradient
     ctx.fillRect(0, 0, width, GROUND_Y)
 
+    ctx.fillStyle = '#37474F'
+    ctx.fillRect(420, 0, 380, GROUND_Y)
+    const seatColors = ['#455A64', '#546E7A', '#607D8B', '#78909C']
+    for (let i = 0; i < 8; i++) {
+      ctx.fillStyle = seatColors[i % seatColors.length]
+      for (let j = 0; j < 11; j++) {
+        const sx = 420 + j * 34
+        const sy = i * 47
+        roundRect(ctx, sx, sy, 32, 44, 3)
+        ctx.fill()
+        ctx.strokeStyle = 'rgba(0,0,0,0.2)'
+        ctx.lineWidth = 1
+        ctx.stroke()
+      }
+    }
+    for (let n = 0; n < 14; n++) {
+      const fx = 430 + (n * 29) % 360
+      const fy = 10 + Math.floor(n / 5) * 50 + (n % 3) * 47
+      drawFan(ctx, fx, fy, 0.55 + (n % 3) * 0.1)
+    }
+
     for (let i = 0; i < 6; i++) {
       const cloudX = ((i * 160 + 40) + (Date.now() * 0.005 * (i % 2 === 0 ? 1 : -1))) % (width + 200) - 100
       const cloudY = 40 + (i % 3) * 35
@@ -79,6 +100,53 @@ export default function GameCanvas({
     ctx.lineTo(BAR_X - 60, GROUND_Y + 40)
     ctx.stroke()
     ctx.setLineDash([])
+
+    const runStartX = 100
+    const runEndX = BAR_X - 180
+    const optimalPoint = 0.8
+    const optimalX = runStartX + (runEndX - runStartX) * optimalPoint
+    const optimalZoneStart = runStartX + (runEndX - runStartX) * 0.75
+    const optimalZoneEnd = runStartX + (runEndX - runStartX) * 0.85
+
+    ctx.fillStyle = 'rgba(76, 175, 80, 0.25)'
+    ctx.fillRect(optimalZoneStart, GROUND_Y + 15, optimalZoneEnd - optimalZoneStart, 50)
+
+    ctx.strokeStyle = '#4CAF50'
+    ctx.lineWidth = 2
+    ctx.setLineDash([5, 3])
+    ctx.beginPath()
+    ctx.moveTo(optimalZoneStart, GROUND_Y + 12)
+    ctx.lineTo(optimalZoneStart, GROUND_Y + 68)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.moveTo(optimalZoneEnd, GROUND_Y + 12)
+    ctx.lineTo(optimalZoneEnd, GROUND_Y + 68)
+    ctx.stroke()
+    ctx.setLineDash([])
+
+    ctx.fillStyle = '#4CAF50'
+    ctx.font = 'bold 10px Inter, sans-serif'
+    ctx.textAlign = 'center'
+    ctx.fillText('最佳区域', (optimalZoneStart + optimalZoneEnd) / 2, GROUND_Y + 45)
+
+    const takeoffX = BAR_X - 80
+    ctx.strokeStyle = '#FFEB3B'
+    ctx.lineWidth = 4
+    ctx.setLineDash([])
+    ctx.beginPath()
+    ctx.moveTo(takeoffX, GROUND_Y + 10)
+    ctx.lineTo(takeoffX, GROUND_Y + 65)
+    ctx.stroke()
+    ctx.fillStyle = '#FFEB3B'
+    ctx.font = 'bold 12px Inter, sans-serif'
+    ctx.textAlign = 'center'
+    ctx.fillText('起跳线', takeoffX, GROUND_Y + 85)
+    ctx.beginPath()
+    ctx.moveTo(takeoffX - 8, GROUND_Y + 8)
+    ctx.lineTo(takeoffX, GROUND_Y - 2)
+    ctx.lineTo(takeoffX + 8, GROUND_Y + 8)
+    ctx.closePath()
+    ctx.fill()
 
     const barY = GROUND_Y - barHeight * PIXELS_PER_METER
 
@@ -146,27 +214,6 @@ export default function GameCanvas({
       ctx.arc(sx, sy, 1 + Math.random() * 1.5, 0, Math.PI * 2)
       ctx.fill()
     }
-
-    ctx.fillStyle = '#37474F'
-    ctx.fillRect(420, 0, 380, GROUND_Y)
-    const seatColors = ['#455A64', '#546E7A', '#607D8B', '#78909C']
-    for (let i = 0; i < 8; i++) {
-      ctx.fillStyle = seatColors[i % seatColors.length]
-      for (let j = 0; j < 11; j++) {
-        const sx = 420 + j * 34
-        const sy = i * 47
-        roundRect(ctx, sx, sy, 32, 44, 3)
-        ctx.fill()
-        ctx.strokeStyle = 'rgba(0,0,0,0.2)'
-        ctx.lineWidth = 1
-        ctx.stroke()
-      }
-    }
-    for (let n = 0; n < 14; n++) {
-      const fx = 430 + (n * 29) % 360
-      const fy = 10 + Math.floor(n / 5) * 50 + (n % 3) * 47
-      drawFan(ctx, fx, fy, 0.55 + (n % 3) * 0.1)
-    }
   }, [width, height])
 
   const draw = useCallback((timestamp: number) => {
@@ -198,12 +245,14 @@ export default function GameCanvas({
       }
     } else if (phase === 'jumping') {
       const maxHeight = currentJumpResult?.height || barHeight
+      const jumpStartX = 100 + runUpProgress * (BAR_X - 180)
+      const jumpDistance = BAR_X + 180 - jumpStartX
       pose = getJumpPose(
         animationFrame,
         style,
         maxHeight,
-        BAR_X - 70,
-        240
+        jumpStartX,
+        jumpDistance
       )
     } else {
       pose = getIdlePose(timestamp)
